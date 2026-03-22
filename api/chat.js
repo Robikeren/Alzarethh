@@ -13,28 +13,31 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const groqMessages = [
+      { role: "system", content: system || "Kamu adalah tutor AI yang membantu pelajar Indonesia." },
+      ...messages
+    ];
+
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "llama-3.3-70b-versatile",
         max_tokens: 1024,
-        system: system || "Kamu adalah tutor AI yang membantu pelajar Indonesia.",
-        messages,
+        messages: groqMessages,
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || "API error" });
+      return res.status(response.status).json({ error: data.error?.message || "Groq API error" });
     }
 
-    return res.status(200).json({ reply: data.content[0].text });
+    return res.status(200).json({ reply: data.choices[0].message.content });
   } catch (err) {
     return res.status(500).json({ error: "Server error: " + err.message });
   }
