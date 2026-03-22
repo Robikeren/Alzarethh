@@ -1,0 +1,8 @@
+{
+  "name": "studymate-ai",
+  "version": "1.0.0",
+  "description": "AI Tutor powered by Claude",
+  "engines": {
+    "node": ">=18"
+  }
+}
