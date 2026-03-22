@@ -4,7 +4,14 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      error: "Method not allowed",
+      key_exists: !!process.env.GROQ_API_KEY,
+      key_prefix: process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.substring(0, 8) : "NOT FOUND"
+    });
+  }
 
   const { messages, system } = req.body;
 
