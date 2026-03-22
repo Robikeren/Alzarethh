@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyMate AI — Tutor Pintarmu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0e1a;
+      --surface: #111527;
+      --surface2: #181d30;
+      --border: rgba(99, 120, 255, 0.15);
+      --accent: #6378ff;
+      --accent2: #a78bfa;
+      --accent3: #34d399;
+      --text: #e8eaf6;
+      --text-muted: #7b82a8;
+      --user-bubble: #1e2540;
+      --ai-bubble: #131829;
+      --glow: rgba(99, 120, 255, 0.25);
+    }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Background mesh */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% -10%, rgba(99,120,255,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 110%, rgba(167,139,250,0.1) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(52,211,153,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Header */
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11,14,26,0.85);
+      backdrop-filter: blur(12px);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 16px var(--glow);
+    }
+
+    .logo-text {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-text span {
+      color: var(--accent2);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .subject-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      font-size: 0.8rem;
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .subject-select:focus { border-color: var(--accent); }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      background: var(--accent3);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent3);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.6; transform:scale(0.85); }
+    }
+
+    /* Main layout */
+    .app {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 65px);
+      overflow: hidden;
+    }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scroll-behavior: smooth;
+    }
+    .chat-area::-webkit-scrollbar { width: 4px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Welcome screen */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      flex: 1;
+      gap: 24px;
+      padding: 40px 20px;
+      animation: fadeUp 0.6s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(20px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    .welcome-icon {
+      font-size: 3.5rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 20px rgba(99,120,255,0.5));
+    }
+
+    .welcome h1 {
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .welcome p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    .quick-prompts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      max-width: 600px;
+    }
+
+    .quick-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: 'Sora', sans-serif;
+      font-size: 0.8rem;
+      padding: 9px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    .quick-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(99,120,255,0.08);
+      transform: translateY(-1px);
+    }
+
+    /* Messages */
+    .message {
+      display: flex;
+      gap: 12px;
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      animation: msgIn 0.35s ease;
+    }
+    @keyframes msgIn {
+      from { opacity:0; transform:translateY(10px); }
+      to { opacity:1; transform:translateY(0); }
+    }
+
+    .message.user { flex-direction: row-reverse; }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .avatar.ai {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 12px var(--glow);
+    }
+
+    .avatar.user {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
+
+    .bubble {
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 0.92rem;
+      line-height: 1.7;
+      max-width: calc(100% - 60px);
+      position: relative;
+    }
+
+    .message.ai .bubble {
+      background: var(--ai-bubble);
+      border: 1px solid var(--border);
+      border-top-left-radius: 4px;
+    }
+
+    .message.user .bubble {
+      background: linear-gradient(135deg, rgba(99,120,255,0.2), rgba(167,139,250,0.15));
+      border: 1px solid rgba(99,120,255,0.3);
+      border-top-right-radius: 4px;
+      color: var(--text);
+    }
+
+    .bubble strong { color: var(--accent2); }
+    .bubble code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(99,120,255,0.12);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--accent3);
+    }
+
+    .bubble pre {
+      background: #0d1020;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin: 10px 0;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82em;
+      line-height: 1.6;
+      color: #c8d3f5;
+    }
+
+    .bubble ul, .bubble ol {
+      padding-left: 20px;
+      margin: 8px 0;
+    }
+    .bubble li { margin: 4px 0; }
+
+    .bubble h3, .bubble h4 {
+      color: var(--accent2);
+      margin: 12px 0 6px;
+      font-size: 0.95em;
+    }
+
+    .bubble p { margin: 6px 0; }
+
+    /* Subject tag */
+    .subject-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: rgba(99,120,255,0.15);
+      color: var(--accent);
+      margin-bottom: 6px;
+      border: 1px solid rgba(99,120,255,0.25);
+    }
+
+    /* Typing indicator */
+    .typing {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 14px 18px;
+    }
+    .typing span {
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%,60%,100% { transform: translateY(0); opacity:0.4; }
+      30% { transform: translateY(-6px); opacity:1; }
+    }
+
+    /* Input area */
+    .input-area {
+      padding: 16px 20px 20px;
+      border-top: 1px solid var(--border);
+      background: rgba(11,14,26,0.9);
+      backdrop-filter: blur(12px);
+      flex-shrink: 0;
+    }
+
+    .input-wrapper {
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px 12px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99,120,255,0.12);
+    }
+
+    #user-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: 'Sora', sans-serif;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      max-height: 140px;
+      min-height: 24px;
+      overflow-y: auto;
+    }
+
+    #user-input::placeholder { color: var(--text-muted); }
+
+    #user-input::-webkit-scrollbar { width: 3px; }
+    #user-input::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .send-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px var(--glow);
+    }
+
+    .send-btn:hover:not(:disabled) { transform: scale(1.06); box-shadow: 0 4px 18px var(--glow); }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .send-btn svg { width: 16px; height: 16px; }
+
+    /* Input hints */
+    .input-hints {
+      max-width: 760px;
+      margin: 8px auto 0;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .hint-text {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Clear btn */
+    .clear-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: 'Sora', sans-serif;
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .clear-btn:hover { border-color: #f87171; color: #f87171; }
+
+    /* Rendered markdown helpers */
+    .math-block {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88em;
+      color: var(--accent3);
+      background: rgba(52,211,153,0.06);
+      border: 1px solid rgba(52,211,153,0.15);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 8px 0;
+      overflow-x: auto;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎓</div>
+    <div class="logo-text">Study<span>Mate</span> AI</div>
+  </div>
+  <div class="header-right">
+    <select class="subject-select" id="subject">
+      <option value="umum">🌐 Semua Mata Pelajaran</option>
+      <option value="matematika">📐 Matematika</option>
+      <option value="fisika">⚡ Fisika</option>
+      <option value="kimia">🧪 Kimia</option>
+      <option value="biologi">🌿 Biologi</option>
+      <option value="sejarah">📜 Sejarah</option>
+      <option value="bahasa_indonesia">📖 Bahasa Indonesia</option>
+      <option value="bahasa_inggris">🇬🇧 Bahasa Inggris</option>
+      <option value="pemrograman">💻 Pemrograman</option>
+      <option value="ekonomi">💹 Ekonomi</option>
+    </select>
+    <div class="status-dot"></div>
+  </div>
+</header>
+
+<div class="app">
+  <div class="chat-area" id="chat-area">
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">🧠</div>
+      <h1>Halo! Aku Tutor AI-mu</h1>
+      <p>Tanya apa saja tentang pelajaran — matematika, fisika, sejarah, bahasa, atau apapun. Aku siap menjelaskan dengan cara yang mudah dipahami!</p>
+      <div class="quick-prompts">
+        <button class="quick-btn" onclick="quickAsk('Jelaskan cara menghitung turunan fungsi dengan contoh')">📐 Cara menghitung turunan</button>
+        <button class="quick-btn" onclick="quickAsk('Apa itu hukum Newton dan contoh penerapannya?')">⚡ Hukum Newton</button>
+        <button class="quick-btn" onclick="quickAsk('Tolong bantu aku memahami struktur sel')">🌿 Struktur sel</button>
+        <button class="quick-btn" onclick="quickAsk('Cara membuat essay bahasa Indonesia yang baik?')">📖 Cara bikin essay</button>
+        <button class="quick-btn" onclick="quickAsk('Jelaskan konsep OOP dalam pemrograman')">💻 Konsep OOP</button>
+        <button class="quick-btn" onclick="quickAsk('Apa perbedaan past tense dan present perfect?')">🇬🇧 Past tense vs Present perfect</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="user-input" placeholder="Tanya soal, minta penjelasan materi, atau minta bantuan tugas..." rows="1"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+    <div class="input-hints">
+      <span class="hint-text">Enter untuk kirim · Shift+Enter untuk baris baru</span>
+      <button class="clear-btn" onclick="clearChat()">🗑 Hapus chat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const chatArea = document.getElementById('chat-area');
+  const userInput = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
+  const subjectSelect = document.getElementById('subject');
+
+  let conversationHistory = [];
+  let isLoading = false;
+
+  // Auto-resize textarea
+  userInput.addEventListener('input', () => {
+    userInput.style.height = 'auto';
+    userInput.style.height = Math.min(userInput.scrollHeight, 140) + 'px';
+  });
+
+  userInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  function getSubjectLabel() {
+    const opt = subjectSelect.options[subjectSelect.selectedIndex];
+    return opt.text;
+  }
+
+  function getSystemPrompt() {
+    const subject = subjectSelect.value;
+    const subjectMap = {
+      umum: 'semua mata pelajaran',
+      matematika: 'Matematika',
+      fisika: 'Fisika',
+      kimia: 'Kimia',
+      biologi: 'Biologi',
+      sejarah: 'Sejarah',
+      bahasa_indonesia: 'Bahasa Indonesia',
+      bahasa_inggris: 'Bahasa Inggris',
+      pemrograman: 'Pemrograman / Informatika',
+      ekonomi: 'Ekonomi',
+    };
+
+    return `Kamu adalah StudyMate AI, tutor pelajaran yang cerdas, sabar, dan menyenangkan untuk pelajar Indonesia. Spesialisasimu saat ini: ${subjectMap[subject] || 'semua mata pelajaran'}.
+
+Panduan cara menjawab:
+- Gunakan Bahasa Indonesia yang jelas, ramah, dan mudah dipahami
+- Jelaskan langkah demi langkah jika ada soal/hitungan
+- Berikan contoh konkret dan relevan
+- Gunakan analogi yang mudah dipahami jika perlu
+- Jika ada rumus matematika, tulis dengan jelas
+- Beri semangat kepada siswa
+- Jika pertanyaan kurang jelas, tanya dulu klarifikasinya
+- Format jawaban dengan rapi menggunakan paragraf, poin, atau nomor sesuai kebutuhan
+- Jangan langsung berikan jawaban soal ujian — lebih baik bimbing dengan pertanyaan pengarah
+
+Kamu adalah teman belajar yang menyenangkan, bukan robot kaku!`;
+  }
+
+  function renderMarkdown(text) {
+    return text
+      .replace(/```(\w+)?\n?([\s\S]*?)```/g, (_, lang, code) =>
+        `<pre><code>${escapeHtml(code.trim())}</code></pre>`)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+      .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+      .replace(/^[-•] (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(?!<[hup])(.+)$/gm, (m) => m.startsWith('<') ? m : m)
+      .replace(/\n/g, '<br>');
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function hideWelcome() {
+    const welcome = document.getElementById('welcome');
+    if (welcome) welcome.remove();
+  }
+
+  function addMessage(role, content) {
+    hideWelcome();
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = `avatar ${role}`;
+    avatar.textContent = role === 'ai' ? '🎓' : '👤';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+
+    if (role === 'ai') {
+      const subj = document.createElement('div');
+      subj.className = 'subject-tag';
+      subj.textContent = getSubjectLabel();
+      bubble.appendChild(subj);
+
+      const contentDiv = document.createElement('div');
+      contentDiv.innerHTML = renderMarkdown(content);
+      bubble.appendChild(contentDiv);
+    } else {
+      bubble.textContent = content;
+    }
+
+    msgDiv.appendChild(avatar);
+    msgDiv.appendChild(bubble);
+    chatArea.appendChild(msgDiv);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    return bubble;
+  }
+
+  function addTypingIndicator() {
+    hideWelcome();
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message ai';
+    msgDiv.id = 'typing-indicator';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar ai';
+    avatar.textContent = '🎓';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+
+    msgDiv.appendChild(avatar);
+    msgDiv.appendChild(bubble);
+    chatArea.appendChild(msgDiv);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  function removeTypingIndicator() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text || isLoading) return;
+
+    isLoading = true;
+    sendBtn.disabled = true;
+    userInput.value = '';
+    userInput.style.height = 'auto';
+
+    addMessage('user', text);
+    conversationHistory.push({ role: 'user', content: text });
+
+    addTypingIndicator();
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: getSystemPrompt(),
+          messages: conversationHistory,
+        })
+      });
+
+      const data = await response.json();
+      removeTypingIndicator();
+
+      if (data.content && data.content[0]) {
+        const aiText = data.content[0].text;
+        addMessage('ai', aiText);
+        conversationHistory.push({ role: 'assistant', content: aiText });
+      } else {
+        addMessage('ai', '⚠️ Maaf, ada masalah saat mengambil respons. Coba lagi ya!');
+      }
+    } catch (err) {
+      removeTypingIndicator();
+      addMessage('ai', '⚠️ Koneksi bermasalah. Pastikan kamu online dan coba lagi!');
+    }
+
+    isLoading = false;
+    sendBtn.disabled = false;
+    userInput.focus();
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+
+  function quickAsk(text) {
+    userInput.value = text;
+    sendMessage();
+  }
+
+  function clearChat() {
+    conversationHistory = [];
+    chatArea.innerHTML = `
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon">🧠</div>
+        <h1>Halo! Aku Tutor AI-mu</h1>
+        <p>Tanya apa saja tentang pelajaran — matematika, fisika, sejarah, bahasa, atau apapun. Aku siap menjelaskan dengan cara yang mudah dipahami!</p>
+        <div class="quick-prompts">
+          <button class="quick-btn" onclick="quickAsk('Jelaskan cara menghitung turunan fungsi dengan contoh')">📐 Cara menghitung turunan</button>
+          <button class="quick-btn" onclick="quickAsk('Apa itu hukum Newton dan contoh penerapannya?')">⚡ Hukum Newton</button>
+          <button class="quick-btn" onclick="quickAsk('Tolong bantu aku memahami struktur sel')">🌿 Struktur sel</button>
+          <button class="quick-btn" onclick="quickAsk('Cara membuat essay bahasa Indonesia yang baik?')">📖 Cara bikin essay</button>
+          <button class="quick-btn" onclick="quickAsk('Jelaskan konsep OOP dalam pemrograman')">💻 Konsep OOP</button>
+          <button class="quick-btn" onclick="quickAsk('Apa perbedaan past tense dan present perfect?')">🇬🇧 Past tense vs Present perfect</button>
+        </div>
+      </div>`;
+  }
+
+  userInput.focus();
+</script>
+</body>
+</html>
