@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyMate AI — Tutor Pintarmu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0b0e1a; --surface: #111527; --surface2: #181d30;
+      --border: rgba(99,120,255,0.15); --accent: #6378ff; --accent2: #a78bfa;
+      --accent3: #34d399; --text: #e8eaf6; --text-muted: #7b82a8;
+      --glow: rgba(99,120,255,0.25);
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: 'Sora', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    body::before {
+      content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+      background: radial-gradient(ellipse 80% 60% at 20% -10%, rgba(99,120,255,0.1) 0%, transparent 60%),
+                  radial-gradient(ellipse 60% 50% at 80% 110%, rgba(167,139,250,0.08) 0%, transparent 60%);
+    }
+    header {
+      z-index:10; display:flex; align-items:center; justify-content:space-between;
+      padding:14px 22px; border-bottom:1px solid var(--border);
+      background:rgba(11,14,26,0.92); backdrop-filter:blur(12px); flex-shrink:0;
+    }
+    .logo { display:flex; align-items:center; gap:9px; }
+    .logo-icon {
+      width:34px; height:34px; border-radius:10px; display:flex; align-items:center;
+      justify-content:center; font-size:17px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      box-shadow:0 0 14px var(--glow);
+    }
+    .logo-text { font-size:1rem; font-weight:700; letter-spacing:-.02em; }
+    .logo-text span { color:var(--accent2); }
+    .header-right { display:flex; align-items:center; gap:10px; }
+    select {
+      background:var(--surface2); border:1px solid var(--border); color:var(--text);
+      font-family:'Sora',sans-serif; font-size:0.75rem; padding:6px 10px;
+      border-radius:7px; cursor:pointer; outline:none; transition:border-color .2s;
+    }
+    select:focus { border-color:var(--accent); }
+    .dot { width:7px; height:7px; background:var(--accent3); border-radius:50%; box-shadow:0 0 7px var(--accent3); animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
+
+    .app { position:relative; z-index:1; flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+    #chat {
+      flex:1; overflow-y:auto; padding:22px 16px; display:flex;
+      flex-direction:column; gap:16px; scroll-behavior:smooth;
+    }
+    #chat::-webkit-scrollbar { width:3px; }
+    #chat::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+    .welcome {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      text-align:center; flex:1; gap:18px; padding:32px 16px;
+      animation:fadeUp .5s ease;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .welcome-icon { font-size:3rem; filter:drop-shadow(0 0 18px rgba(99,120,255,.5)); }
+    .welcome h1 {
+      font-size:clamp(1.4rem,4vw,1.9rem); font-weight:800; letter-spacing:-.03em;
+      background:linear-gradient(135deg,#fff 30%,var(--accent2));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .welcome p { color:var(--text-muted); font-size:.88rem; max-width:440px; line-height:1.6; }
+    .quick-prompts { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; max-width:540px; }
+    .qbtn {
+      background:var(--surface2); border:1px solid var(--border); color:var(--text-muted);
+      font-family:'Sora',sans-serif; font-size:.75rem; padding:8px 14px; border-radius:18px;
+      cursor:pointer; transition:all .2s;
+    }
+    .qbtn:hover { border-color:var(--accent); color:var(--text); background:rgba(99,120,255,.08); transform:translateY(-1px); }
+
+    .msg { display:flex; gap:10px; max-width:700px; width:100%; margin:0 auto; animation:msgIn .3s ease; }
+    @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    .msg.user { flex-direction:row-reverse; }
+    .av {
+      width:30px; height:30px; border-radius:8px; display:flex; align-items:center;
+      justify-content:center; font-size:14px; flex-shrink:0; margin-top:2px;
+    }
+    .av.ai { background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 0 10px var(--glow); }
+    .av.user { background:var(--surface2); border:1px solid var(--border); }
+    .bub { padding:11px 15px; border-radius:13px; font-size:.87rem; line-height:1.75; max-width:calc(100% - 48px); }
+    .msg.ai .bub { background:#131829; border:1px solid var(--border); border-top-left-radius:3px; }
+    .msg.user .bub { background:linear-gradient(135deg,rgba(99,120,255,.18),rgba(167,139,250,.12)); border:1px solid rgba(99,120,255,.28); border-top-right-radius:3px; }
+    .stag {
+      display:inline-block; font-size:.6rem; font-weight:600; text-transform:uppercase;
+      letter-spacing:.08em; padding:2px 7px; border-radius:18px;
+      background:rgba(99,120,255,.15); color:var(--accent);
+      border:1px solid rgba(99,120,255,.25); margin-bottom:5px;
+    }
+    .bub strong { color:var(--accent2); }
+    .bub code { font-family:'JetBrains Mono',monospace; background:rgba(99,120,255,.12); padding:2px 5px; border-radius:3px; font-size:.82em; color:var(--accent3); }
+    .bub pre { background:#0d1020; border:1px solid var(--border); border-radius:8px; padding:12px; margin:8px 0; overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:.8em; line-height:1.6; color:#c8d3f5; }
+    .bub ul,.bub ol { padding-left:18px; margin:6px 0; }
+    .bub li { margin:3px 0; }
+    .bub h3,.bub h4 { color:var(--accent2); margin:10px 0 5px; }
+
+    .typing { display:flex; gap:4px; align-items:center; padding:4px 0; }
+    .typing span { width:6px; height:6px; background:var(--accent); border-radius:50%; animation:bounce 1.2s infinite; }
+    .typing span:nth-child(2){animation-delay:.2s} .typing span:nth-child(3){animation-delay:.4s}
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0);opacity:.4} 30%{transform:translateY(-5px);opacity:1} }
+
+    .input-area {
+      padding:11px 16px 15px; border-top:1px solid var(--border);
+      background:rgba(11,14,26,0.93); backdrop-filter:blur(12px); flex-shrink:0;
+    }
+    .iw {
+      max-width:700px; margin:0 auto; display:flex; gap:8px; align-items:flex-end;
+      background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:8px 10px;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    .iw:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px rgba(99,120,255,.1); }
+    textarea {
+      flex:1; background:transparent; border:none; color:var(--text);
+      font-family:'Sora',sans-serif; font-size:.88rem; line-height:1.5;
+      resize:none; outline:none; max-height:120px; min-height:22px;
+    }
+    textarea::placeholder { color:var(--text-muted); }
+    .sbtn {
+      width:34px; height:34px; border-radius:9px; border:none;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:all .2s; flex-shrink:0; box-shadow:0 2px 10px var(--glow);
+    }
+    .sbtn:hover:not(:disabled){ transform:scale(1.07); }
+    .sbtn:disabled{ opacity:.4; cursor:not-allowed; }
+    .sbtn svg { width:14px; height:14px; }
+    .hints { max-width:700px; margin:6px auto 0; display:flex; gap:8px; align-items:center; }
+    .hint { font-size:.68rem; color:var(--text-muted); }
+    .clr { background:none; border:1px solid var(--border); color:var(--text-muted); font-family:'Sora',sans-serif; font-size:.68rem; padding:3px 9px; border-radius:5px; cursor:pointer; transition:all .2s; }
+    .clr:hover { border-color:#f87171; color:#f87171; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-icon">🎓</div>
+    <div class="logo-text">Study<span>Mate</span> AI</div>
+  </div>
+  <div class="header-right">
+    <select id="subj">
+      <option value="umum">🌐 Semua Pelajaran</option>
+      <option value="matematika">📐 Matematika</option>
+      <option value="fisika">⚡ Fisika</option>
+      <option value="kimia">🧪 Kimia</option>
+      <option value="biologi">🌿 Biologi</option>
+      <option value="sejarah">📜 Sejarah</option>
+      <option value="bahasa_indonesia">📖 Bahasa Indonesia</option>
+      <option value="bahasa_inggris">🇬🇧 Bahasa Inggris</option>
+      <option value="pemrograman">💻 Pemrograman</option>
+      <option value="ekonomi">💹 Ekonomi</option>
+    </select>
+    <div class="dot"></div>
+  </div>
+</header>
+
+<div class="app">
+  <div id="chat">
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">🧠</div>
+      <h1>Halo! Aku Tutor AI-mu</h1>
+      <p>Tanya apa saja tentang pelajaran — matematika, fisika, sejarah, bahasa, atau apapun!</p>
+      <div class="quick-prompts">
+        <button class="qbtn" onclick="quickAsk('Jelaskan cara menghitung turunan fungsi dengan contoh')">📐 Cara menghitung turunan</button>
+        <button class="qbtn" onclick="quickAsk('Apa itu hukum Newton dan contoh penerapannya?')">⚡ Hukum Newton</button>
+        <button class="qbtn" onclick="quickAsk('Tolong bantu aku memahami struktur sel')">🌿 Struktur sel</button>
+        <button class="qbtn" onclick="quickAsk('Cara membuat essay bahasa Indonesia yang baik?')">📖 Cara bikin essay</button>
+        <button class="qbtn" onclick="quickAsk('Jelaskan konsep OOP dalam pemrograman')">💻 Konsep OOP</button>
+        <button class="qbtn" onclick="quickAsk('Apa perbedaan past tense dan present perfect?')">🇬🇧 Past vs Present Perfect</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="iw">
+      <textarea id="inp" placeholder="Tanya soal, minta penjelasan materi..." rows="1"></textarea>
+      <button class="sbtn" id="sbtn" onclick="send()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="hints">
+      <span class="hint">Enter kirim · Shift+Enter baris baru</span>
+      <button class="clr" onclick="clearChat()">🗑 Hapus chat</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const inp = document.getElementById('inp');
+const sbtn = document.getElementById('sbtn');
+const subj = document.getElementById('subj');
+let history = [];
+let busy = false;
+
+const SUBJECT_MAP = {
+  umum:'semua mata pelajaran', matematika:'Matematika', fisika:'Fisika',
+  kimia:'Kimia', biologi:'Biologi', sejarah:'Sejarah',
+  bahasa_indonesia:'Bahasa Indonesia', bahasa_inggris:'Bahasa Inggris',
+  pemrograman:'Pemrograman', ekonomi:'Ekonomi'
+};
+
+inp.addEventListener('input', () => {
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
+});
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+});
+
+function getLabel() { return subj.options[subj.selectedIndex].text; }
+
+function getSys() {
+  return `Kamu adalah StudyMate AI, tutor pelajaran yang cerdas dan sabar untuk pelajar Indonesia. Spesialisasi: ${SUBJECT_MAP[subj.value]}.
+- Gunakan Bahasa Indonesia yang jelas dan ramah
+- Jelaskan langkah demi langkah jika ada hitungan
+- Berikan contoh konkret dan relevan
+- Jangan langsung kasih jawaban soal ujian, bimbing dulu
+- Beri semangat kepada siswa!`;
+}
+
+function md(t) {
+  return t
+    .replace(/```[\w]*\n?([\s\S]*?)```/g, (_,c) => `<pre><code>${c.trim().replace(/</g,'&lt;')}</code></pre>`)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    .replace(/^[-•] (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+    .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+}
+
+function hideWelcome() { const w = document.getElementById('welcome'); if(w) w.remove(); }
+
+function addMsg(role, content) {
+  hideWelcome();
+  const d = document.createElement('div');
+  d.className = `msg ${role}`;
+  const av = document.createElement('div');
+  av.className = `av ${role === 'assistant' ? 'ai' : 'user'}`;
+  av.textContent = role === 'assistant' ? '🎓' : '👤';
+  const b = document.createElement('div');
+  b.className = 'bub';
+  if (role === 'assistant') {
+    const tag = document.createElement('div');
+    tag.className = 'stag'; tag.textContent = getLabel(); b.appendChild(tag);
+    const c = document.createElement('div'); c.innerHTML = md(content); b.appendChild(c);
+  } else {
+    b.textContent = content;
+  }
+  d.appendChild(av); d.appendChild(b); chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function addTyping() {
+  hideWelcome();
+  const d = document.createElement('div'); d.className = 'msg ai'; d.id = 'typing';
+  const av = document.createElement('div'); av.className = 'av ai'; av.textContent = '🎓';
+  const b = document.createElement('div'); b.className = 'bub';
+  b.innerHTML = '<div class="stag">' + getLabel() + '</div><div class="typing"><span></span><span></span><span></span></div>';
+  d.appendChild(av); d.appendChild(b); chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
+function removeTyping() { const e = document.getElementById('typing'); if(e) e.remove(); }
+
+async function send() {
+  const text = inp.value.trim();
+  if (!text || busy) return;
+  busy = true; sbtn.disabled = true;
+  inp.value = ''; inp.style.height = 'auto';
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+  addTyping();
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history, system: getSys() })
+    });
+    const data = await res.json();
+    removeTyping();
+    if (data.reply) {
+      addMsg('assistant', data.reply);
+      history.push({ role: 'assistant', content: data.reply });
+    } else {
+      addMsg('assistant', '⚠️ Error: ' + (data.error || 'Unknown error'));
+    }
+  } catch(e) {
+    removeTyping();
+    addMsg('assistant', '⚠️ Gagal konek ke server: ' + e.message);
+  }
+  busy = false; sbtn.disabled = false;
+  inp.focus(); chat.scrollTop = chat.scrollHeight;
+}
+
+function quickAsk(t) { inp.value = t; send(); }
+
+function clearChat() {
+  history = [];
+  chat.innerHTML = `<div class="welcome" id="welcome">
+    <div class="welcome-icon">🧠</div>
+    <h1>Halo! Aku Tutor AI-mu</h1>
+    <p>Tanya apa saja tentang pelajaran!</p>
+    <div class="quick-prompts">
+      <button class="qbtn" onclick="quickAsk('Jelaskan cara menghitung turunan fungsi dengan contoh')">📐 Cara menghitung turunan</button>
+      <button class="qbtn" onclick="quickAsk('Apa itu hukum Newton dan contoh penerapannya?')">⚡ Hukum Newton</button>
+      <button class="qbtn" onclick="quickAsk('Tolong bantu aku memahami struktur sel')">🌿 Struktur sel</button>
+      <button class="qbtn" onclick="quickAsk('Cara membuat essay bahasa Indonesia yang baik?')">📖 Cara bikin essay</button>
+    </div>
+  </div>`;
+}
+
+inp.focus();
+</script>
+</body>
+</html>
